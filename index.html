@@ -543,46 +543,21 @@ VIA ARTIGIANATO, 12
             }
 
             // PARSING SERIALI dalla sezione "Lot/Serial Information"
+            // Formato reale: "H48222DZ 1 1 26170120" — codice e seriale sulla stessa riga
             console.log('--- Ricerca Seriali ---');
             const serialSection = text.match(/Lot\/Serial\s+Information([\s\S]*?)(?:Additional Information|$)/i);
             if (serialSection) {
                 console.log('✓ Sezione Lot/Serial trovata');
                 const serialText = serialSection[1];
-                console.log('Testo sezione seriali (primi 800 caratteri):', serialText.substring(0, 800));
-                const serialLines = serialText.split('\n');
-
-                // Approccio multi-riga: traccia l'ultimo codice articolo visto
-                let currentItemCode = null;
-                for (const line of serialLines) {
-                    const trimmed = line.trim();
-
-                    // Cerca il codice articolo (es. H48232DF)
-                    const codeMatch = trimmed.match(/^(H\d{5}[A-Z]{1,3})\b/);
-                    if (codeMatch) {
-                        currentItemCode = codeMatch[1];
-                        console.log(`  Codice trovato: ${currentItemCode}`);
-                        // Controlla se c'è anche un seriale sulla stessa riga
-                        const inlineSerial = trimmed.match(/H\d{5}[A-Z]{1,3}\s+\([^)]+\)\s+\d+\s+\d+\s+([A-Z0-9]{5,})/);
-                        if (inlineSerial) {
-                            if (!data.serialMap[currentItemCode]) data.serialMap[currentItemCode] = [];
-                            data.serialMap[currentItemCode].push(inlineSerial[1]);
-                            console.log(`    → seriale inline: ${inlineSerial[1]}`);
-                            currentItemCode = null;
-                        }
-                        continue;
-                    }
-
-                    // Se abbiamo un codice articolo corrente, cerca il seriale
-                    // La riga con il seriale è tipicamente: "<qty> <cnt#>  <SERIAL>"
-                    if (currentItemCode) {
-                        const serialMatch = trimmed.match(/^\d+\s+\d+\s+([A-Z0-9]{5,})/);
-                        if (serialMatch) {
-                            if (!data.serialMap[currentItemCode]) data.serialMap[currentItemCode] = [];
-                            data.serialMap[currentItemCode].push(serialMatch[1]);
-                            console.log(`    → ${currentItemCode}: ${serialMatch[1]}`);
-                            currentItemCode = null;
-                        }
-                    }
+                console.log('Testo sezione seriali:', serialText.substring(0, 800));
+                const serialPattern = /(H\d{5}[A-Z]{1,3})\s+\d+\s+\d+\s+([A-Z0-9]{5,})/g;
+                let m;
+                while ((m = serialPattern.exec(serialText)) !== null) {
+                    const itemCode = m[1];
+                    const serial = m[2];
+                    if (!data.serialMap[itemCode]) data.serialMap[itemCode] = [];
+                    data.serialMap[itemCode].push(serial);
+                    console.log(`  → ${itemCode}: ${serial}`);
                 }
             } else {
                 console.error('✗ Sezione Lot/Serial Information NON trovata!');
