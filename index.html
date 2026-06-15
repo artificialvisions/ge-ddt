@@ -347,11 +347,16 @@
             <div class="step">
                 <label>
                     <span class="step-number">1</span>
-                    Carica Packing Slip (PDF)
+                    Carica Packing Slip (PDF) <span style="font-weight:400;color:#888;">— oppure inserisci articoli manualmente</span>
                 </label>
-                <div class="file-input-wrapper">
-                    <div class="file-input-button">Seleziona File PDF</div>
-                    <input type="file" id="packingSlip" accept=".pdf,.PDF,application/pdf" />
+                <div style="display:flex;gap:10px;align-items:stretch;">
+                    <div class="file-input-wrapper" style="flex:1;">
+                        <div class="file-input-button">Seleziona File PDF</div>
+                        <input type="file" id="packingSlip" accept=".pdf,.PDF,application/pdf" />
+                    </div>
+                    <button class="btn" style="margin-top:0;width:auto;padding:12px 20px;font-size:14px;white-space:nowrap;" onclick="startManual()">
+                        + Inserimento manuale
+                    </button>
                 </div>
                 <div class="file-name" id="fileName"></div>
             </div>
@@ -624,6 +629,14 @@ VIA ARTIGIANATO, 12
             return data;
         }
 
+        function startManual() {
+            extractedItems = [];
+            packingSlipData = { items: [], serialMap: {} };
+            addNewItem();
+            document.getElementById('preview').classList.add('active');
+            document.getElementById('preview').scrollIntoView({ behavior: 'smooth' });
+        }
+
         function showPreview(data) {
             // Salva i dati ma NON mostrare ancora la tabella
             packingSlipData = data;
@@ -871,12 +884,14 @@ VIA ARTIGIANATO, 12
 
                 y = topBoxY - committenteHeight - 10;
 
-                // RIQUADRO MITTENTE - PIÙ SPAZIO SOPRA
+                // RIQUADRI MITTENTE e DESTINATARIO affiancati
                 const mittenteLines = mittente.split('\n');
-                const mittenteHeight = Math.max(70, 20 + (mittenteLines.length * 13) + 10);
-                
+                const destLines = destinatario.split('\n');
+                const sideBySideHeight = Math.max(70, 20 + (Math.max(mittenteLines.length, destLines.length) * 13) + 10);
+
+                // MITTENTE (sinistra)
                 page.drawRectangle({
-                    x: 40, y: y - mittenteHeight + 5, width: 515, height: mittenteHeight,
+                    x: 40, y: y - sideBySideHeight + 5, width: 252, height: sideBySideHeight,
                     borderColor: PDFLib.rgb(0, 0, 0), borderWidth: 1
                 });
                 page.drawText('MITTENTE (LUOGO DI RITIRO):', { x: 45, y: y - 5, size: 8, font: fontBold });
@@ -886,26 +901,19 @@ VIA ARTIGIANATO, 12
                     mittY -= 13;
                 });
 
-                y = y - mittenteHeight - 10;
-
-                // RIQUADRO DESTINATARIO - MOLTO PIÙ GENEROSO
-                const destLines = destinatario.split('\n');
-                const destBoxHeight = Math.max(75, 20 + (destLines.length * 14) + 15);
-                
+                // DESTINATARIO (destra)
                 page.drawRectangle({
-                    x: 40, y: y - destBoxHeight + 10, width: 515, height: destBoxHeight,
+                    x: 303, y: y - sideBySideHeight + 5, width: 252, height: sideBySideHeight,
                     borderColor: PDFLib.rgb(0, 0, 0), borderWidth: 1
                 });
-                
-                page.drawText('DESTINATARIO (LUOGO DI DESTINAZIONE):', { x: 45, y: y, size: 8, font: fontBold });
-                y -= 18;
-                
+                page.drawText('DESTINATARIO (LUOGO DI DESTINAZIONE):', { x: 308, y: y - 5, size: 8, font: fontBold });
+                let destY = y - 22;
                 destLines.forEach(line => {
-                    page.drawText(line, { x: 45, y: y, size: 9, font });
-                    y -= 14;
+                    page.drawText(line, { x: 308, y: destY, size: 9, font });
+                    destY -= 13;
                 });
 
-                y -= 25;
+                y = y - sideBySideHeight - 15;
 
                 // CAUSALE - ALLINEATA COME GLI ALTRI RIQUADRI
                 page.drawText('CAUSALE DEL TRASPORTO:', { x: 45, y: y, size: 8, font: fontBold });
